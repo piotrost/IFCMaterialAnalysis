@@ -1,3 +1,5 @@
+# old test script
+
 import ifcopenshell
 from collections import Counter
 

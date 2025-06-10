@@ -1,3 +1,5 @@
+# Authors: Remigiusz Szewczak, Maciej Mirowski, Piotr Ostaszewski
+
 import ifcopenshell
 import ifcopenshell.geom
 from OCC.Core.BRepGProp import brepgprop_VolumeProperties
@@ -6,6 +8,7 @@ from collections import defaultdict
 import pandas as pd
 from openai import OpenAI
 import regex
+import json
 
 # types of objects that might have volume
 volume_object_types = [
@@ -101,7 +104,7 @@ def get_material_density(key, material, temperature=0):
 
     return density
 
-# count the mass of material based on material_dict
+# count the mass of material
 def count_mass_of_material(full_material_name, volume, material_dict, openai_key):
     # remove non-letter characters
     short_name = regex.sub(r'[^\p{L}]', '', full_material_name.lower())
@@ -134,21 +137,12 @@ def count_mass_of_material(full_material_name, volume, material_dict, openai_key
         
     return None  # if trouble with OpenAI API
 
-if __name__ == "__main__":
-    import argparse
-    import json
-    
-    # set up argument parser
-    parser = argparse.ArgumentParser(description="Calculate volumes and masses of elements in an IFC file.")
-    parser.add_argument("ifc_file", help="Path to the IFC file")
-    parser.add_argument("--key", help="OpenAI API key for material density lookup", default="data/key.json")
-    parser.add_argument("--material_dict", help="Path to the material density dictionary JSON file", default="data/material_densities.json")
+# ************************************************************************************************************
 
-    args = parser.parse_args()
-    
+def volume_calculator(ifc_file, key_path, material_dict_path):    
     # Load OpenAI API key from JSON file
     try:
-        key_dict = json.load(open(args.key, 'r'))
+        key_dict = json.load(open(key_path, 'r'))
         openai_key = key_dict['key']
     except:
         print("OpenAI API key not found. Please provide a valid path to the key file.")
@@ -157,14 +151,14 @@ if __name__ == "__main__":
     
     # Load material densities dictionary from JSON file or create an empty one
     try:
-        material_dict = json.load(open(args.material_dict, 'r'))
+        material_dict = json.load(open(material_dict_path, 'r'))
     except:
         material_dict = {}
 
     # ----------------------------------------------------------------------------
     
     # Load the IFC model
-    model = ifcopenshell.open(args.ifc_file)
+    model = ifcopenshell.open(ifc_file)
     if not model:
         raise ValueError("Failed to open IFC file. Please check the file path and format.")
 
@@ -209,8 +203,8 @@ if __name__ == "__main__":
         
         # add volume if successfully retrieved
         if volume:
-            key = (element_type, material)
-            volume_by_type_and_material[key] += float(volume)
+            key_path = (element_type, material)
+            volume_by_type_and_material[key_path] += float(volume)
 
     # ----------------------------------------------------------------------------
 
@@ -233,9 +227,29 @@ if __name__ == "__main__":
     total_mass = summary_df["Mass [kg]"].sum()
 
     # print results
+    summary_df["Volume [m³]"] = summary_df["Volume [m³]"].round(3)
+    summary_df["Mass [kg]"] = summary_df["Mass [kg]"].round(3)
     print(summary_df)
-    print(f"Whole mass: {round(total_mass, 3)} kg")
 
     # save material dictionary to JSON file
-    with open(args.material_dict, 'w', encoding='utf-8') as f:
+    with open(material_dict_path, 'w', encoding='utf-8') as f:
         json.dump(material_dict, f, indent=4)
+
+    return total_mass
+
+
+
+if __name__ == "__main__":
+    import argparse
+    
+    # set up argument parser
+    parser = argparse.ArgumentParser(description="Calculate volumes and masses of elements in an IFC file.")
+    parser.add_argument("ifc_file", help="Path to the IFC file")
+    parser.add_argument("--key", help="OpenAI API key for material density lookup", default="key.json")
+    parser.add_argument("--material_dict", help="Path to the material density dictionary JSON file", default="material_densities.json")
+
+    args = parser.parse_args()
+
+    # run the volume calculator
+    total_mass = volume_calculator(ifc_file=args.ifc_file, key_path=args.key, material_dict=args.material_dict)
+    print(f"Whole mass: {round(total_mass, 3)} kg")

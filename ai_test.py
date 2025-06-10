@@ -29,7 +29,7 @@ if __name__ == "__main__":
     material = sys.argv[1] if len(sys.argv) > 1 else "Wasser"
 
     # get api key from file
-    with open('data/key.json', 'r', encoding='utf-8') as f:
+    with open('key.json', 'r', encoding='utf-8') as f:
         key_dict = json.load(f)
     key = key_dict['key']
 
