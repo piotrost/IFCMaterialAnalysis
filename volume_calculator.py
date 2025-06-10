@@ -251,5 +251,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # run the volume calculator
-    total_mass = volume_calculator(ifc_file=args.ifc_file, key_path=args.key, material_dict=args.material_dict)
+    total_mass = volume_calculator(ifc_file=args.ifc_file, key_path=args.key, material_dict_path=args.material_dict)
     print(f"Whole mass: {round(total_mass, 3)} kg")
