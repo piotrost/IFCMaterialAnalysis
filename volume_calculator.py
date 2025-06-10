@@ -203,8 +203,8 @@ def volume_calculator(ifc_file, key_path, material_dict_path):
         
         # add volume if successfully retrieved
         if volume:
-            key_path = (element_type, material)
-            volume_by_type_and_material[key_path] += float(volume)
+            key = (element_type, material)
+            volume_by_type_and_material[key] += float(volume)
 
     # ----------------------------------------------------------------------------
 
